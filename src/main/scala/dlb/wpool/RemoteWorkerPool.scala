@@ -3,13 +3,13 @@ package dlb.wpool
 import akka.actor.{ActorSystem, Props, Actor}
 import akka.routing.SmallestMailboxRouter
 import akka.event.Logging
-import java.net.InetAddress
 import dlb.scheduler.tasks._
 import com.typesafe.config.ConfigFactory
 import scalapara.ParsedArgs
 import dlb.scheduler.AppArgsDB._
+import reflect.ClassTag
 
-class RemoteWorkerPool[W <: Actor : Manifest](schedSysName:String, schedName:String, schedHost:String, schedPort:Int, maxWorkers:Int, wPoolPort:Int) extends Actor {
+class RemoteWorkerPool[W <: Actor : ClassTag](schedSysName:String, schedName:String, schedHost:String, schedPort:Int, maxWorkers:Int, wPoolPort:Int) extends Actor {
   val schedulerPath = "akka://"+schedSysName+"@"+schedHost+":"+schedPort.toString+"/user/"+schedName
   val taskScheduler = context.actorFor(schedulerPath)
   val workers = context.actorOf(Props[W].withRouter(SmallestMailboxRouter(maxWorkers)), name = self.path.name+"_workers")
@@ -59,9 +59,9 @@ class RemoteWorkerPool[W <: Actor : Manifest](schedSysName:String, schedName:Str
 
 trait RemoteWorkerApp {
 
-  def createRemoteWorkerPoolFromParsedArgs[T <: Actor : Manifest] (parsedArgs:ParsedArgs, poolSystemName:String, schedulerSystemName:String) {
+  def createRemoteWorkerPoolFromParsedArgs[T <: Actor : ClassTag] (parsedArgs:ParsedArgs, poolSystemName:String, schedulerSystemName:String) {
 
-    System.setProperty("workercluster.akka.remote.netty.hostname", InetAddress.getLocalHost.getHostAddress)
+    System.setProperty("workercluster.akka.remote.netty.hostname", parsedArgs(sysHost))
     System.setProperty("workercluster.akka.remote.netty.port", parsedArgs(wPoolPort))
 
     val cfg = ConfigFactory.load.getConfig("workercluster")

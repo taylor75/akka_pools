@@ -19,8 +19,7 @@ class CalculatorTaskScheduler extends TaskScheduler {
 }
 
 object RemoteCalculatorPoolApp
-  extends CmdLineApp("RemoteCalculatorPoolApp", Array(wPoolApp, wPoolPort, numWorkers, schedulerName, schedulerHost, schedulerPort))
-  with RemoteWorkerApp {
+  extends CmdLineApp("RemoteCalculatorPoolApp", Array(sysHost, wPoolApp, wPoolPort, numWorkers, schedulerName, schedulerHost, schedulerPort)) with RemoteWorkerApp {
 
   override def description:String = "An CmdLineApp for bringing online a distributed pool of workers supervised by a RemoteWorkerPool Actor."
 

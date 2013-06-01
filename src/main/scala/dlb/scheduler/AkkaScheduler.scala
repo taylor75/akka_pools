@@ -6,6 +6,7 @@ import dlb.scheduler.tasks._
 import akka.event.Logging
 import scalapara.{DefaultArg, AppArg, ParsedArgs}
 import AppArgsDB._
+import reflect.ClassTag
 
 /*
 * User: catayl2
@@ -26,7 +27,7 @@ object AppArgsDB {
   val actorName = AppArg("-an", "General purpose way to refer to the name of an actor")
   val actorPort = AppArg("-ap", "General purpose way to refer to the port of an actor")
   val actorCfg = AppArg("-ac", "General purpose way to refer to the cfg of an actor")
-  val sysHost = AppArg("-ah", "General purpose way to refer to the host of an actor")
+  val sysHost = DefaultArg("-ah", "General purpose way to refer to the host of an actor", "127.0.0.1")
 }
 
 
@@ -34,7 +35,7 @@ trait TaskSchedulerApp  {
 
   def schedulerSystemName:String
 
-  def createSchedulerFromParsedArgs[T <: Actor : Manifest](paramArgs:ParsedArgs, schedulerSystemName:String):ActorRef = {
+  def createSchedulerFromParsedArgs[T <: Actor : ClassTag](paramArgs:ParsedArgs, schedulerSystemName:String):ActorRef = {
     System.setProperty("taskscheduler.akka.remote.netty.hostname", paramArgs(schedulerHost))
     System.setProperty("taskscheduler.akka.remote.netty.port", paramArgs(schedulerPort))
     System.setProperty("taskscheduler.akka.tick-duration", "3s")
