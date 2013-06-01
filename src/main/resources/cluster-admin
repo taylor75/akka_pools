@@ -1,4 +1,4 @@
 #!/bin/bash
 
-java $JAVA_OPTS -cp ./:akkastuffs.jar sample.remote.calculator.RemoteCalculatorAppSuite $1 $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${11} ${12}
+java $JAVA_OPTS -cp ./:akkastuffs.jar sample.remote.calculator.RemoteCalculatorAppSuite $1 $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15} ${16}
 
