@@ -68,7 +68,7 @@ trait RemoteWorkerApp {
     val system = ActorSystem(poolSystemName, cfg)
 
     val (lName, nWorkers, lPort, sPort, sName, sHost) = (
-      parsedArgs(wPoolApp), parsedArgs(numWorkers).toInt, parsedArgs(wPoolPort).toInt, parsedArgs(schedulerPort),
+        parsedArgs(wPoolApp), parsedArgs(numWorkers).toInt, parsedArgs(wPoolPort).toInt, parsedArgs(schedulerPort),
       parsedArgs(schedulerName), parsedArgs(schedulerHost))
 
     val actor = system.actorOf(Props(new RemoteWorkerPool[T]( schedulerSystemName, sName, sHost, sPort.toInt, nWorkers, lPort)), name = lName )

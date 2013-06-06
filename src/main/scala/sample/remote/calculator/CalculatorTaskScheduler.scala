@@ -19,7 +19,8 @@ class CalculatorTaskScheduler extends TaskScheduler {
 }
 
 object RemoteCalculatorPoolApp
-  extends CmdLineApp("RemoteCalculatorPoolApp", Array(sysHost, wPoolApp, wPoolPort, numWorkers, schedulerName, schedulerHost, schedulerPort)) with RemoteWorkerApp {
+  extends CmdLineApp("RemoteCalculatorPoolApp",
+    Array(sysHost, wPoolApp, wPoolPort, numWorkers, schedulerName, schedulerHost, schedulerPort)) with RemoteWorkerApp {
 
   override def description:String = "An CmdLineApp for bringing online a distributed pool of workers supervised by a RemoteWorkerPool Actor."
 
@@ -46,20 +47,3 @@ object CalculatorTaskScheduler
 
 }
 
-object RemoteCalculatorAppSuite extends CmdLineAppSuite("RemoteCalculatorAppSuite", List(CalculatorTaskScheduler, RemoteCalculatorPoolApp, ShutdownWorkers)) {
-
-  def selectApp(args:Array[String]):Option[CmdLineApp] = {
-    for {
-      appNmArg <- args.headOption
-      chosenApp <- cmdLineApps.find{anApp:CmdLineApp =>  appNmArg.equals(anApp.appName)}
-    }
-    yield chosenApp
-  }
-
-  def main (args:Array[String]) {
-    selectApp(args) match {
-        case None => printInfo
-        case Some(appChoice) => appChoice.main(args.tail)
-      }
-  }
-}

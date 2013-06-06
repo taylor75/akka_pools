@@ -42,6 +42,7 @@ trait TaskSchedulerApp  {
 
     println("sched sys = " + schedulerSystemName)
     val cfg = ConfigFactory.load.getConfig("taskscheduler")
+    println("!!!CFG!!! => " + cfg.getString("akka.remote.netty.hostname"))
     val system = ActorSystem(schedulerSystemName, cfg)
     val sActor = system.actorOf(Props[T], name = paramArgs(schedulerName))
     println("Started Scheduler Application - waiting for messages schedulerSystem = " + sActor.path + " toStr: " + sActor.toString())
