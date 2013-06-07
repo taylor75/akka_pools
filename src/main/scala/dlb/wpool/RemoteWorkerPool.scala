@@ -13,7 +13,9 @@ class RemoteWorkerPool[W <: Actor : ClassTag](schedSysName:String, schedName:Str
   val schedulerPath = "akka://"+schedSysName+"@"+schedHost+":"+schedPort.toString+"/user/"+schedName
   val taskScheduler = context.actorFor(schedulerPath)
   val workers = context.actorOf(Props[W].withRouter(SmallestMailboxRouter(maxWorkers)), name = self.path.name+"_workers")
+
   val log = Logging(context.system, this)
+  Logging(context.system, self).info("Children of RemoteWorkerPool: " + context.children.map {_.path.toString}.mkString(", "))
 
   var stopRequested = false
   var currentWorkerCount = 0
