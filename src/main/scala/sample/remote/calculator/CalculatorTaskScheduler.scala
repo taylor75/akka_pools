@@ -4,7 +4,7 @@ import scalapara.{CmdLineApp, CmdLineAppSuite}
 import dlb.scheduler._
 import dlb.scheduler.tasks._
 import dlb.wpool.RemoteWorkerApp
-import dlb.shutdown.ShutdownWorkers
+import dlb.shutdown.Shutdown
 import dlb.scheduler.AppArgsDB._
 
 class CalculatorTaskScheduler extends TaskScheduler {
@@ -20,7 +20,7 @@ class CalculatorTaskScheduler extends TaskScheduler {
 
 object RemoteCalculatorPoolApp
   extends CmdLineApp("RemoteCalculatorPoolApp",
-    Array(sysHost, wPoolApp, wPoolPort, numWorkers, schedulerName, schedulerHost, schedulerPort)) with RemoteWorkerApp {
+    Array(sysHost, wPoolApp, numWorkers, schedulerName, schedulerHost, schedulerPort)) with RemoteWorkerApp {
 
   override def description:String = "An CmdLineApp for bringing online a distributed pool of workers supervised by a RemoteWorkerPool Actor."
 

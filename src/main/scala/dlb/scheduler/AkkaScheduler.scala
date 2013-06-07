@@ -18,7 +18,6 @@ object AppArgsDB {
   val schedulerName = AppArg("-s","Name designated for the task scheduler / coordinator actor system.")
   val schedulerPort = AppArg("-sp", "The port the Scheduler's actor system will be listening to and to which launchers can bind")
   val wPoolApp = AppArg("-l","Name designated for the task launcher actor system.")
-  val wPoolPort = AppArg("-wp", "The port the on which remote worker pool listens for requests")
   val numWorkers = DefaultArg("-w", "The number of workers to which an instance of a launcher will route tasks", "3")
   val schedulerHost = DefaultArg("-sh", "The Host Ip Address the Scheduler is running on", "127.0.0.1")
   val workerPoolId = AppArg("-poolStop", "Stop a specificly named pool '-poolName' or view a menu of current running pools to stop [none, all, or $poolName]")
@@ -60,7 +59,7 @@ trait TaskScheduler extends Actor {
       log.info("NextTask: "+ nextTask)
       sender ! nextTask
 
-    case ExpireRemotePool =>
+    case Expire =>
       context.stop(self)
       context.system.shutdown()
   }

@@ -8,7 +8,7 @@ import dlb.scheduler.tasks._
 import scalapara.CmdLineApp
 import dlb.scheduler.AppArgsDB._
 
-object ShutdownWorkers extends CmdLineApp("ShutdownWorkerPool", Array(sysHost, systemName, actorName, actorPort, actorCfg)) {
+object Shutdown extends CmdLineApp("ShutdownSystem", Array(sysHost, systemName, actorName, actorPort, actorCfg)) {
   override def description = "An App to Gracefully Shutdown actor systems running on the current host"
 
   def main(args: Array[String]) {
@@ -37,7 +37,7 @@ class ShutdownActor(paths:List[String]) extends Actor {
     case Setup =>
       println("Received Setup Msg")
       log.debug("Trying to exterminate -- " + workerActorRefs.map{_.path}.mkString("\n"))
-      workerActorRefs.foreach {_ ! ExpireRemotePool }
+      workerActorRefs.foreach {_ ! Expire }
 
     case r:RemoteClientShutdown =>
       log.info("RemoteShutdown detected! [" + deathWatchCount + "] for " + r)

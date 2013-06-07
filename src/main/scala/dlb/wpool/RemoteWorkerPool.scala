@@ -1,6 +1,6 @@
 package dlb.wpool
 
-import akka.actor.{ActorSystem, Props, Actor}
+import akka.actor.{ActorLogging, ActorSystem, Props, Actor}
 import akka.routing.SmallestMailboxRouter
 import akka.event.Logging
 import dlb.scheduler.tasks._
@@ -9,7 +9,7 @@ import scalapara.ParsedArgs
 import dlb.scheduler.AppArgsDB._
 import reflect.ClassTag
 
-class RemoteWorkerPool[W <: Actor : ClassTag](schedSysName:String, schedName:String, schedHost:String, schedPort:Int, maxWorkers:Int, wPoolPort:Int) extends Actor {
+class RemoteWorkerPool[W <: Actor : ClassTag](schedSysName:String, schedName:String, schedHost:String, schedPort:Int, maxWorkers:Int) extends Actor {
   val schedulerPath = "akka://"+schedSysName+"@"+schedHost+":"+schedPort.toString+"/user/"+schedName
   val taskScheduler = context.actorFor(schedulerPath)
   val workers = context.actorOf(Props[W].withRouter(SmallestMailboxRouter(maxWorkers)), name = self.path.name+"_workers")
@@ -32,7 +32,7 @@ class RemoteWorkerPool[W <: Actor : ClassTag](schedSysName:String, schedName:Str
       log.info(sender + "\t" + result +"\t" + currentWorkerCount)
       requestWork()
 
-    case ExpireRemotePool =>
+    case Expire =>
       log.warning("RemoteWorkerPool set to expire -- No new tasks will be requested and existing tasks ["+currentWorkerCount+"] will finish.")
       stopRequested = true
 
@@ -48,8 +48,7 @@ class RemoteWorkerPool[W <: Actor : ClassTag](schedSysName:String, schedName:Str
         currentWorkerCount += 1
         taskScheduler ! NeedWork()
       }
-    }
-    else if (currentWorkerCount == 0) {
+    } else if (currentWorkerCount == 0) {
       log.warning("********* Launcher System Shutting Down *********** ["+self.path.name+"]")
       context.stop(self)
       context.system.shutdown()
@@ -60,20 +59,14 @@ class RemoteWorkerPool[W <: Actor : ClassTag](schedSysName:String, schedName:Str
 trait RemoteWorkerApp {
 
   def createRemoteWorkerPoolFromParsedArgs[T <: Actor : ClassTag] (parsedArgs:ParsedArgs, poolSystemName:String, schedulerSystemName:String) {
+    val system = ActorSystem(poolSystemName, ConfigFactory.load.getConfig("workercluster"))
 
-    System.setProperty("workercluster.akka.remote.netty.hostname", parsedArgs(sysHost))
-    System.setProperty("workercluster.akka.remote.netty.port", parsedArgs(wPoolPort))
+    val (lName, nWorkers, sPort, sName, sHost) =
+      (parsedArgs(wPoolApp), parsedArgs(numWorkers).toInt, parsedArgs(schedulerPort), parsedArgs(schedulerName), parsedArgs(schedulerHost))
 
-    val cfg = ConfigFactory.load.getConfig("workercluster")
-    val system = ActorSystem(poolSystemName, cfg)
-
-    val (lName, nWorkers, lPort, sPort, sName, sHost) = (
-        parsedArgs(wPoolApp), parsedArgs(numWorkers).toInt, parsedArgs(wPoolPort).toInt, parsedArgs(schedulerPort),
-      parsedArgs(schedulerName), parsedArgs(schedulerHost))
-
-    val actor = system.actorOf(Props(new RemoteWorkerPool[T]( schedulerSystemName, sName, sHost, sPort.toInt, nWorkers, lPort)), name = lName )
-
-    Logging(system, actor).info(actor.toString())
+    val actor = system.actorOf(Props(new RemoteWorkerPool[T]( schedulerSystemName, sName, sHost, sPort.toInt, nWorkers)), name = lName )
+    Logging(system, actor) info( s"port=${actor.path.address.port.toString}" )
+    Logging(system, actor) info( actor.toString() )
     actor ! Setup
   }
 }

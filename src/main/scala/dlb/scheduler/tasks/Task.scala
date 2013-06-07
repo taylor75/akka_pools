@@ -2,7 +2,7 @@ package dlb.scheduler.tasks
 
 trait Task
 
-case class ExpireRemotePool()
+case class Expire()
 
 case class NeedWork() extends Task
 
