@@ -4,7 +4,7 @@ trait Task
 
 case class Expire()
 
-case class NeedWork() extends Task
+case object NeedWork extends Task
 
 case class Setup() extends Task
 
@@ -14,3 +14,5 @@ case class TaskExecutionError(e:Throwable)
 
 trait TaskResult
 
+case class JobFailed(reason: String, job: Task)
+case object BackendRegistration

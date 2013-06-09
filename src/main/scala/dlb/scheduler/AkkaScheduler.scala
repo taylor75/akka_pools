@@ -3,10 +3,13 @@ package dlb.scheduler
 import akka.actor._
 import com.typesafe.config._
 import dlb.scheduler.tasks._
-import akka.event.Logging
-import scalapara.{DefaultArg, AppArg, ParsedArgs}
-import AppArgsDB._
 import reflect.ClassTag
+import dlb.scheduler.tasks.BackendRegistration
+import akka.event.Logging
+import scalapara.DefaultArg
+import scalapara.AppArg
+import tasks.JobFailed
+import akka.actor.Terminated
 
 /*
 * User: catayl2
@@ -15,53 +18,56 @@ import reflect.ClassTag
 */
 
 object AppArgsDB {
-  val schedulerName = AppArg("-s","Name designated for the task scheduler / coordinator actor system.")
-  val schedulerPort = AppArg("-sp", "The port the Scheduler's actor system will be listening to and to which launchers can bind")
+  val port = DefaultArg("-sp", "The port the Scheduler's actor system will be listening to and to which launchers can bind", "0")
   val wPoolApp = AppArg("-l","Name designated for the task launcher actor system.")
   val numWorkers = DefaultArg("-w", "The number of workers to which an instance of a launcher will route tasks", "3")
-  val schedulerHost = DefaultArg("-sh", "The Host Ip Address the Scheduler is running on", "127.0.0.1")
   val workerPoolId = AppArg("-poolStop", "Stop a specificly named pool '-poolName' or view a menu of current running pools to stop [none, all, or $poolName]")
-
-  val systemName = AppArg("-sn", "General purpose way to refer to the name of an actor system")
-  val actorName = AppArg("-an", "General purpose way to refer to the name of an actor")
-  val actorPort = AppArg("-ap", "General purpose way to refer to the port of an actor")
   val actorCfg = AppArg("-ac", "General purpose way to refer to the cfg of an actor")
-  val sysHost = DefaultArg("-ah", "General purpose way to refer to the host of an actor", "127.0.0.1")
 }
 
 
 trait TaskSchedulerApp  {
 
-  def schedulerSystemName:String
+  def schedulerServiceName:String
 
-  def createSchedulerFromParsedArgs[T <: Actor : ClassTag](paramArgs:ParsedArgs, schedulerSystemName:String):ActorRef = {
-    System.setProperty("taskscheduler.akka.remote.netty.hostname", paramArgs(schedulerHost))
-    System.setProperty("taskscheduler.akka.remote.netty.port", paramArgs(schedulerPort))
-    System.setProperty("taskscheduler.akka.tick-duration", "3s")
+  def createSchedulerFromParsedArgs[T <: Actor : ClassTag](schedulerPort:Option[Int]):ActorRef = {
 
-    println("sched sys = " + schedulerSystemName)
-    val cfg = ConfigFactory.load.getConfig("taskscheduler")
-    println("!!!CFG!!! => " + cfg.getString("akka.remote.netty.hostname"))
-    val system = ActorSystem(schedulerSystemName, cfg)
-    val sActor = system.actorOf(Props[T], name = paramArgs(schedulerName))
-    println("Started Scheduler Application - waiting for messages schedulerSystem = " + sActor.path + " toStr: " + sActor.toString())
+    schedulerPort.foreach {sp => System.setProperty("workercluster.akka.remote.netty.port", sp.toString)}
+
+    val cfg = ConfigFactory.load.getConfig("workercluster")
+    val system = ActorSystem(cfg.getString("system-name"), cfg)
+    val sActor = system.actorOf(Props[T], name = schedulerServiceName)
+    Logging(system, sActor).info(s"Started Scheduler Application - waiting for messages schedulerSystem = ${sActor.path} toStr: ${sActor.toString()}")
     sActor
   }
 }
 
-trait TaskScheduler extends Actor {
+trait TaskScheduler extends Actor with ActorLogging {
+
+  var backends = IndexedSeq.empty[ActorRef]
+  var jobCounter = 0
+
   def findNextJob:Task
-  val log = Logging(context.system, this)
 
   def receive = {
-    case NeedWork() =>
+
+    case NeedWork =>
       val nextTask = findNextJob
       log.info("NextTask: "+ nextTask)
       sender ! nextTask
 
-    case Expire =>
-      context.stop(self)
-      context.system.shutdown()
+      case job: Task if backends.isEmpty ⇒
+        sender ! JobFailed("Service unavailable, try again later", job)
+
+      case job: Task ⇒
+        jobCounter += 1
+        backends(jobCounter % backends.size) forward job
+
+      case BackendRegistration if !backends.contains(sender) ⇒
+        context watch sender
+        backends = backends :+ sender
+
+      case Terminated(a) ⇒
+        backends = backends.filterNot(_ == a)
   }
 }
-
