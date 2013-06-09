@@ -6,8 +6,6 @@ case class Expire()
 
 case object NeedWork extends Task
 
-case class Setup() extends Task
-
 case class TaskComplete(addResult:TaskResult, executionTimeInSecs:Double) extends TaskResult
 
 case class TaskExecutionError(e:Throwable)
@@ -15,4 +13,5 @@ case class TaskExecutionError(e:Throwable)
 trait TaskResult
 
 case class JobFailed(reason: String, job: Task)
+
 case object BackendRegistration

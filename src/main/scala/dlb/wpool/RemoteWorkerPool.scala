@@ -8,7 +8,6 @@ import com.typesafe.config.ConfigFactory
 import reflect.ClassTag
 import akka.cluster.{Cluster, Member, MemberStatus}
 import akka.cluster.ClusterEvent.MemberUp
-import dlb.scheduler.tasks.Setup
 import akka.cluster.ClusterEvent.CurrentClusterState
 import dlb.scheduler.tasks.Expire
 import language.postfixOps
@@ -18,7 +17,7 @@ class RemoteWorkerPool[W <: Actor : ClassTag](schedService:String, maxWorkers:In
   val cfg = ConfigFactory.load().getConfig("workercluster")
   val sysName = cfg.getString("system-name")
 
-  println("Address Info " +
+  log.info("Address Info: " +
     List("akka", sysName, cfg.getString("scheduler-service.host"), cfg.getString("scheduler-service.port").toInt).mkString(", ")
   )
 
@@ -38,7 +37,6 @@ class RemoteWorkerPool[W <: Actor : ClassTag](schedService:String, maxWorkers:In
   val tickTask = context.system.scheduler.schedule(2 seconds, 2 seconds, self, "tick")
 
   def receive = {
-    case Setup => // Tick Obviates
 
     case task:Task ⇒ workers ! task
 
@@ -84,7 +82,5 @@ trait RemoteWorkerApp {
     val system = ActorSystem(cfg.getString("system-name"), cfg)
     val actor = system.actorOf(Props(new RemoteWorkerPool[T]( schedulerServiceName, 3 )), workerServiceName )
     Logging(system, actor) info( s"port=${actor.path.address.port.toString}" )
-    Logging(system, actor) info( actor.toString() )
-    actor ! Setup
   }
 }

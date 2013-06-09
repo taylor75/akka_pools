@@ -1,6 +1,6 @@
 package sample.remote.calculator
 
-import akka.actor.Actor
+import akka.actor.{ActorLogging, Actor}
 import dlb.scheduler.tasks._
 
 /*
@@ -9,14 +9,11 @@ import dlb.scheduler.tasks._
 * Time: 11:39 AM
 */
 
-class AddSubtractActor extends Actor {
+class AddSubtractActor extends Actor with ActorLogging {
   def receive = {
     case t:Task ⇒ t match {
-      case Add(n1, n2) => try{
-        sender ! TaskComplete(AddResult(n1, n2, n1 + n2), 0d)
-      } catch {
-        case e:Throwable => sender ! TaskExecutionError(e)
-      }
+      case Add(n1, n2) =>  sender ! TaskComplete(AddResult(n1, n2, n1 + n2), 0d)
+      case other => log.error(t + " was not supposed to be sent to AddSubtractActor")
     }
   }
 }

@@ -34,8 +34,7 @@ object RemoteCalculatorPoolApp extends CmdLineApp("RemoteCalculatorPoolApp", Arr
   }
 }
 
-object CalculatorTaskScheduler
-  extends CmdLineApp("CalculatorTaskScheduler", Array(port)) with TaskSchedulerApp {
+object CalculatorTaskScheduler extends CmdLineApp("CalculatorTaskScheduler", Array(port)) with TaskSchedulerApp {
 
   def schedulerServiceName = appName
 
