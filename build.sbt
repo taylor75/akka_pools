@@ -24,5 +24,7 @@ libraryDependencies += "com.typesafe.akka" % "akka-kernel_2.10" % "2.1.4"
 
 libraryDependencies += "com.typesafe.akka" %% "akka-cluster-experimental" % "2.1.4"
 
+libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.0.0" % "runtime"
+
 scalacOptions += "-deprecation"
 

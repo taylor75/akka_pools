@@ -41,7 +41,8 @@ class RemoteWorkerPool[W <: Actor : ClassTag](schedService:String, maxWorkers:In
       taskCounter+=1
       workers ! task
 
-    case result: TaskResult => log.info(sender + "\t" + result)
+    case result: TaskResult =>
+      log.info(s"${sender.path.elements.drop(2).toList.mkString} => $result")
       taskCounter-=1
       if(stopRequested && taskCounter==0) {
         context.stop(self)
