@@ -22,5 +22,7 @@ libraryDependencies += "com.typesafe.akka" % "akka-testkit_2.10" % "2.1.4"
 
 libraryDependencies += "com.typesafe.akka" % "akka-kernel_2.10" % "2.1.4"
 
+libraryDependencies += "com.typesafe.akka" %% "akka-cluster-experimental" % "2.1.4"
+
 scalacOptions += "-deprecation"
 
