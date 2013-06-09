@@ -1,9 +1,8 @@
 package dlb.shutdown
 
-import akka.actor.{Props, Actor, ActorSystem}
+import akka.actor.{ActorLogging, Props, Actor, ActorSystem}
 import com.typesafe.config.ConfigFactory
 import akka.remote.RemoteClientShutdown
-import akka.event.Logging
 import dlb.scheduler.tasks._
 import scalapara.CmdLineApp
 import dlb.scheduler.AppArgsDB._
@@ -18,7 +17,10 @@ object Shutdown extends CmdLineApp("ShutdownSystem", Array(sysHost, systemName, 
       val hostName = appArgs(sysHost)
 
       val system = ActorSystem(appArgs(systemName), cfg)
-      val greeter = system.actorOf(Props(new ShutdownActor(List("akka://"+appArgs(systemName)+"@"+hostName+":" + appArgs(actorPort) + "/user/"+appArgs(actorName)))), name = "destroya")
+      val greeter = system.actorOf(
+        Props(new ShutdownActor(List("akka://"+appArgs(systemName)+"@"+hostName+":" + appArgs(actorPort) + "/user/"+appArgs(actorName)))),
+        name = "destroya"
+      )
 
       greeter ! Setup
       println("Just sent off Setup Msg")
@@ -27,15 +29,13 @@ object Shutdown extends CmdLineApp("ShutdownSystem", Array(sysHost, systemName, 
   }
 }
 
-class ShutdownActor(paths:List[String]) extends Actor {
+class ShutdownActor(paths:List[String]) extends Actor with ActorLogging {
   println("paths = " + paths.mkString(", "))
   val workerActorRefs = paths.map{context.actorFor(_)}
   var deathWatchCount = workerActorRefs.size
-  val log = Logging(context.system, this)
 
   def receive = {
     case Setup =>
-      println("Received Setup Msg")
       log.debug("Trying to exterminate -- " + workerActorRefs.map{_.path}.mkString("\n"))
       workerActorRefs.foreach {_ ! Expire }
 
@@ -45,6 +45,7 @@ class ShutdownActor(paths:List[String]) extends Actor {
 
       if (deathWatchCount == 0) {
         context.stop(self)
+
         context.system.shutdown()
       }
   }
