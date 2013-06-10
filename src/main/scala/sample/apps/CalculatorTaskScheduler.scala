@@ -34,8 +34,6 @@ class CalculatorTaskScheduler extends TaskScheduler {
 }
 
 object RemoteCalculatorPoolApp extends RemoteWorkerApp {
-
-
   def workerServiceName = "RemoteCalculatorPoolApp"
 
   def schedulerServiceName:String = CalculatorTaskScheduler.schedulerServiceName

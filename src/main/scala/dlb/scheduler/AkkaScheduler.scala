@@ -33,7 +33,6 @@ trait TaskSchedulerApp  {
 }
 
 trait TaskScheduler extends Actor with ActorLogging {
-
   var backends = IndexedSeq.empty[ActorRef]
   var jobCounter = 0
 
@@ -57,7 +56,8 @@ trait TaskScheduler extends Actor with ActorLogging {
         context watch sender
         backends = backends :+ sender
 
-      case Terminated(a) ⇒
+      case Terminated(a) =>
+        log.info("Terminated backend member: " + a.toString())
         backends = backends.filterNot(_ == a)
   }
 }

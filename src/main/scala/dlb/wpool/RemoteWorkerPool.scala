@@ -21,7 +21,7 @@ class RemoteWorkerPool[W <: Actor : ClassTag](schedService:String, maxWorkers:In
   val cluster = Cluster(context.system)
   var stopRequested = false
   import context.dispatcher
-  val tickTask = context.system.scheduler.schedule(2 seconds, 2 seconds, self, "tick")
+  val tickTask = cluster.system.scheduler.schedule(15 seconds, 30 seconds, self, "tick")
   var taskCounter = 0
 
   // subscribe to cluster changes, MemberUp, re-subscribe when restart
@@ -48,7 +48,8 @@ class RemoteWorkerPool[W <: Actor : ClassTag](schedService:String, maxWorkers:In
         context.stop(self)
       }
 
-    case state: CurrentClusterState ⇒
+    case state: CurrentClusterState =>
+      log.debug(state.toString)
       state.members.filter(_.status == MemberStatus.Up) foreach register
 
     case MemberExited(me) =>
@@ -64,13 +65,13 @@ class RemoteWorkerPool[W <: Actor : ClassTag](schedService:String, maxWorkers:In
   // try to register to all nodes, even though there
   // might not be any frontend on all nodes
   def register(member: Member){
-    context.actorFor(RootActorPath(member.address) / "user" / schedService) ! BackendRegistration
+    cluster.system.actorFor(RootActorPath(member.address) / "user" / schedService) ! BackendRegistration
   }
 
   def requestWork(){
     if(!stopRequested) {
-      val schedAddress = context.actorFor(RootActorPath(cfgSchedulerAddress) / "user" / schedService)
-      schedAddress ! NeedWork
+      val schedulerActor = cluster.system.actorFor(RootActorPath(cfgSchedulerAddress) / "user" / schedService)
+      schedulerActor ! NeedWork
     }
   }
 }
@@ -83,11 +84,12 @@ trait RemoteWorkerApp {
 
   def createRemoteWorkerPoolFromParsedArgs[T <: Actor : ClassTag] (port:Option[Int]) {
     port.foreach {sp => System.setProperty("workercluster.akka.remote.netty.port", sp.toString)}
-    println("RWApp.port => " + System.getProperty("workercluster.akka.remote.netty.port"))
     val cfg = ConfigFactory.load.getConfig("workercluster")
     val system = ActorSystem(cfg.getString("system-name"), cfg)
-    println("System.name => " + system.name + ", and scheduler service name => " + schedulerServiceName)
+
     val actor = system.actorOf(Props(new RemoteWorkerPool[T]( schedulerServiceName, 3 )), workerServiceName )
-    Logging(system, actor) info( s"port=${actor.path.address.port.toString} and workerServiceName is $workerServiceName" )
+    Logging(system, actor).info("System.name => " + system.name + ", and scheduler service name => " + schedulerServiceName)
+    val workerServiceInfoString:String = s"port=${actor.path.address.port.toString} and workerServiceName is $workerServiceName"
+    Logging(system, actor).info( workerServiceInfoString )
   }
 }
