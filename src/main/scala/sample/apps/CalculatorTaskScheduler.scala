@@ -13,6 +13,8 @@ import dlb.wpool.RemoteWorkerApp
 
 object CalculatorTaskScheduler extends TaskSchedulerApp {
 
+  def schedulerServiceName = "CalculatorTaskScheduler"
+
   def main(args: Array[String]) {
     val thePort:Option[Int] = args.headOption.map {_.toInt}
     createSchedulerFromParsedArgs[CalculatorTaskScheduler]( thePort )
@@ -32,6 +34,9 @@ class CalculatorTaskScheduler extends TaskScheduler {
 }
 
 object RemoteCalculatorPoolApp extends RemoteWorkerApp {
+
+
+  def workerServiceName = "RemoteCalculatorPoolApp"
 
   def schedulerServiceName:String = CalculatorTaskScheduler.schedulerServiceName
 

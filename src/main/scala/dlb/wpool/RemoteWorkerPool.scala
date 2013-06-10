@@ -17,6 +17,7 @@ class RemoteWorkerPool[W <: Actor : ClassTag](schedService:String, maxWorkers:In
   val cfgSchedulerAddress = Address("akka", sysName, cfg.getString("scheduler-service.host"), cfg.getString("scheduler-service.port").toInt)
   val workers = context.actorOf(Props[W].withRouter(SmallestMailboxRouter(maxWorkers)), name = self.path.name+"_workers")
 
+  log.info("cfgSchedulerAddr = " + cfgSchedulerAddress)
   val cluster = Cluster(context.system)
   var stopRequested = false
   import context.dispatcher
@@ -31,7 +32,6 @@ class RemoteWorkerPool[W <: Actor : ClassTag](schedService:String, maxWorkers:In
 
   override def postStop(){
     cluster.unsubscribe(self)
-    cluster.system.shutdown()
   }
 
   def receive = {
@@ -77,15 +77,17 @@ class RemoteWorkerPool[W <: Actor : ClassTag](schedService:String, maxWorkers:In
 
 trait RemoteWorkerApp {
 
-  def workerServiceName:String = getClass.getSimpleName
+  def workerServiceName:String
 
   def schedulerServiceName:String
 
   def createRemoteWorkerPoolFromParsedArgs[T <: Actor : ClassTag] (port:Option[Int]) {
     port.foreach {sp => System.setProperty("workercluster.akka.remote.netty.port", sp.toString)}
+    println("RWApp.port => " + System.getProperty("workercluster.akka.remote.netty.port"))
     val cfg = ConfigFactory.load.getConfig("workercluster")
     val system = ActorSystem(cfg.getString("system-name"), cfg)
+    println("System.name => " + system.name + ", and scheduler service name => " + schedulerServiceName)
     val actor = system.actorOf(Props(new RemoteWorkerPool[T]( schedulerServiceName, 3 )), workerServiceName )
-    Logging(system, actor) info( s"port=${actor.path.address.port.toString}" )
+    Logging(system, actor) info( s"port=${actor.path.address.port.toString} and workerServiceName is $workerServiceName" )
   }
 }

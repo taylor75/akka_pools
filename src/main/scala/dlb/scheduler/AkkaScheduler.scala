@@ -18,7 +18,7 @@ import akka.actor.Terminated
 
 trait TaskSchedulerApp  {
 
-  def schedulerServiceName:String = getClass.getSimpleName
+  def schedulerServiceName:String
 
   def createSchedulerFromParsedArgs[T <: Actor : ClassTag](schedulerPort:Option[Int]):ActorRef = {
     schedulerPort.foreach {sp => System.setProperty("workercluster.akka.remote.netty.port", sp.toString)}
