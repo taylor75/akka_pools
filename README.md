@@ -1,9 +1,9 @@
 akka_pools
 ==========
 
-Exploring akka remote modules with a focus on simplifying the job of achieving pools of distributed akka workers
+Exploring akka remote/cluster modules with a focus on simplifying the job of achieving pools of distributed akka workers
 
-## Getting Started ... now featuring akka-cluster-experimental!
+## Getting Started
 - Start the calculator sample app scheduler
         
         sbt -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false
