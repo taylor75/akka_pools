@@ -52,7 +52,6 @@ class RemoteWorkerPool[W <: Actor : ClassTag](schedService:String, maxWorkers:In
       state.members.filter(_.status == MemberStatus.Up) foreach register
 
     case MemberExited(me) =>
-      log.warning("my address is " + cluster.selfAddress + " MemberExited address is " + me.address)
       if (cluster.selfAddress == me.address) {
         log.warning("RemoteWorkerPool MemberDowned -- No new tasks will be requested and existing tasks will finish.")
         stopRequested = true
@@ -78,11 +77,11 @@ class RemoteWorkerPool[W <: Actor : ClassTag](schedService:String, maxWorkers:In
 
 trait RemoteWorkerApp {
 
-  def workerServiceName:String
+  def workerServiceName:String = getClass.getSimpleName
 
   def schedulerServiceName:String
 
-  def createRemoteWorkerPoolFromParsedArgs[T <: Actor : ClassTag] (port:Option[Int], poolSystemName:String ) {
+  def createRemoteWorkerPoolFromParsedArgs[T <: Actor : ClassTag] (port:Option[Int]) {
     port.foreach {sp => System.setProperty("workercluster.akka.remote.netty.port", sp.toString)}
     val cfg = ConfigFactory.load.getConfig("workercluster")
     val system = ActorSystem(cfg.getString("system-name"), cfg)

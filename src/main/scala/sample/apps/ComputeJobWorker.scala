@@ -1,4 +1,4 @@
-package sample.remote.calculator
+package sample.apps
 
 import akka.actor.{ActorLogging, Actor}
 import dlb.scheduler.tasks._

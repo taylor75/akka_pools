@@ -1,4 +1,4 @@
-package sample.remote.calculator
+package sample.apps
 
 import dlb.scheduler.tasks._
 
