@@ -30,7 +30,6 @@ class CalculatorTaskScheduler extends TaskScheduler {
       Add(rnd.nextInt(25), rnd.nextInt(33))
     else Add(java.lang.Math.max(30, rnd.nextInt(90)), -1*rnd.nextInt(30))
   }
-
 }
 
 object RemoteCalculatorPoolApp extends RemoteWorkerApp {
@@ -42,3 +41,33 @@ object RemoteCalculatorPoolApp extends RemoteWorkerApp {
     createRemoteWorkerPoolFromParsedArgs[AddSubtractActor]( args.headOption.map {_.toInt} )
   }
 }
+
+object MultiplyTaskScheduler extends TaskSchedulerApp {
+
+  def schedulerServiceName = "MultiplyTaskScheduler"
+
+  def main(args: Array[String]) {
+    val thePort:Option[Int] = args.headOption.map {_.toInt}
+    createSchedulerFromParsedArgs[MultiplyTaskScheduler]( thePort )
+  }
+}
+
+class MultiplyTaskScheduler extends TaskScheduler {
+  val rnd = new scala.util.Random()
+
+  def findNextJob:Task = {
+    Mult(rnd.nextInt(19), rnd.nextInt(19))
+  }
+}
+
+object RemoteMultiplyPoolApp extends RemoteWorkerApp {
+  def workerServiceName = "RemoteMultiplyPoolApp"
+
+  def schedulerServiceName:String = MultiplyTaskScheduler.schedulerServiceName
+
+  def main(args: Array[String]) {
+    val myPort = args.headOption.map {hd => hd.toInt}
+    createRemoteWorkerPoolFromParsedArgs[MultiplyActor]( myPort )
+  }
+}
+

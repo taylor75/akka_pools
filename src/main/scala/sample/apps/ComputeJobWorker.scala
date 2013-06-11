@@ -17,3 +17,12 @@ class AddSubtractActor extends Actor with ActorLogging {
     }
   }
 }
+
+class MultiplyActor extends Actor with ActorLogging {
+  def receive = {
+    case t:Task ⇒ t match {
+      case m:Mult =>  sender ! TaskComplete(MultResult(m, (m.nbr1 * m.nbr2)), 0d)
+      case other => log.error(t + " was not supposed to be sent to AddSubtractActor")
+    }
+  }
+}

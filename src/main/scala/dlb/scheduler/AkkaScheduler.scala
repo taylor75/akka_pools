@@ -6,8 +6,11 @@ import dlb.scheduler.tasks._
 import reflect.ClassTag
 import dlb.scheduler.tasks.BackendRegistration
 import akka.event.Logging
-import tasks.JobFailed
 import akka.actor.Terminated
+import language.postfixOps
+import scala.concurrent.duration._
+import akka.cluster.ClusterEvent.MemberExited
+import akka.cluster.Cluster
 
 /*
 * User: catayl2
@@ -35,29 +38,46 @@ trait TaskSchedulerApp  {
 trait TaskScheduler extends Actor with ActorLogging {
   var backends = IndexedSeq.empty[ActorRef]
   var jobCounter = 0
+  var stopRequested = false
+
+  val cluster = Cluster(context.system)
+  import context.dispatcher
+  val tickTask = context.system.scheduler.schedule(15 seconds, 30 seconds, self, "tick")
+
+  // subscribe to cluster changes, MemberUp, re-subscribe when restart
+  override def preStart(){
+    cluster.subscribe(self, classOf[MemberExited])
+  }
+
+  override def postStop(){
+    cluster.unsubscribe(self)
+  }
 
   def findNextJob:Task
 
   def receive = {
 
-    case NeedWork =>
-      val nextTask = findNextJob
-      log.info("NextTask: "+ nextTask)
-      sender ! nextTask
-
-      case job: Task if backends.isEmpty ⇒
-        sender ! JobFailed("Service unavailable, try again later", job)
-
-      case job: Task ⇒
+    case "tick" =>
+      if(backends.nonEmpty) {
         jobCounter += 1
-        backends(jobCounter % backends.size) forward job
+        backends(jobCounter % backends.size) ! findNextJob
+      } else {
+        log.error("No backends discovered for ")
+      }
 
-      case BackendRegistration if !backends.contains(sender) ⇒
-        context watch sender
-        backends = backends :+ sender
+    case MemberExited(me) =>
+      if (cluster.selfAddress == me.address) {
+        log.warning("RemoteWorkerPool MemberDowned -- No new tasks will be requested and existing tasks will finish.")
+        stopRequested = true
+        tickTask.cancel()
+      }
 
-      case Terminated(a) =>
-        log.info("Terminated backend member: " + a.toString())
-        backends = backends.filterNot(_ == a)
+    case BackendRegistration if !backends.contains(sender) ⇒
+      context watch sender
+      backends = backends :+ sender
+
+    case Terminated(a) =>
+      log.info("Terminated backend member: " + a.toString())
+      backends = backends.filterNot(_ == a)
   }
 }
