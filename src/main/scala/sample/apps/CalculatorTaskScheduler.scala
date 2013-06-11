@@ -70,4 +70,3 @@ object RemoteMultiplyPoolApp extends RemoteWorkerApp {
     createRemoteWorkerPoolFromParsedArgs[MultiplyActor]( myPort )
   }
 }
-

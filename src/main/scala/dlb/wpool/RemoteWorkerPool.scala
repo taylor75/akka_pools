@@ -8,6 +8,8 @@ import com.typesafe.config.ConfigFactory
 import reflect.ClassTag
 import akka.cluster.{Cluster, Member, MemberStatus}
 import akka.cluster.ClusterEvent._
+import language.postfixOps
+import scala.concurrent.duration._
 
 class RemoteWorkerPool[W <: Actor : ClassTag](schedService:String, maxWorkers:Int) extends Actor with ActorLogging {
   val workers = context.actorOf(Props[W].withRouter(SmallestMailboxRouter(maxWorkers)), name = self.path.name+"_workers")
@@ -57,8 +59,13 @@ class RemoteWorkerPool[W <: Actor : ClassTag](schedService:String, maxWorkers:In
   // try to register to all nodes, even though there
   // might not be any frontend on all nodes
   def register(member: Member){
-    cluster.system.actorFor(RootActorPath(member.address) / "user" / schedService) ! BackendRegistration
+    if (member.hasRole(convertActorNameToRole(schedService))) {
+      cluster.system.actorSelection(RootActorPath(member.address) / "user" / schedService) ! BackendRegistration
+    }
   }
+
+
+  def convertActorNameToRole(name:String) = name.toLowerCase
 }
 
 trait RemoteWorkerApp {
@@ -68,8 +75,11 @@ trait RemoteWorkerApp {
   def schedulerServiceName:String
 
   def createRemoteWorkerPoolFromParsedArgs[T <: Actor : ClassTag] (port:Option[Int]) {
-    port.foreach {sp => System.setProperty("workercluster.akka.remote.netty.port", sp.toString)}
-    val cfg = ConfigFactory.load.getConfig("workercluster")
+    port.foreach {sp => System.setProperty("workercluster.akka.remote.netty.tcp.port", sp.toString)}
+
+    val cfg = ConfigFactory.parseString("akka.cluster.roles = ["+workerServiceName.toLowerCase+"]")
+      .withFallback(ConfigFactory.load.getConfig("workercluster"))
+
     val system = ActorSystem(cfg.getString("system-name"), cfg)
 
     val actor = system.actorOf(Props(new RemoteWorkerPool[T]( schedulerServiceName, 3 )), workerServiceName )

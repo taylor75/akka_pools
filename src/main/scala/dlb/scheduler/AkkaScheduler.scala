@@ -23,14 +23,15 @@ trait TaskSchedulerApp  {
 
   def schedulerServiceName:String
 
-  def createSchedulerFromParsedArgs[T <: Actor : ClassTag](schedulerPort:Option[Int]):ActorRef = {
-    schedulerPort.foreach {sp => System.setProperty("workercluster.akka.remote.netty.port", sp.toString)}
-    val cfg = ConfigFactory.load.getConfig("workercluster")
+  def createSchedulerFromParsedArgs[T <: Actor : ClassTag](schedulerPort:Option[Int], roleName:String = schedulerServiceName.toLowerCase()):ActorRef = {
+    schedulerPort.foreach {sp => System.setProperty("workercluster.akka.remote.netty.tcp.port", sp.toString)}
+
+    val cfg = ConfigFactory.parseString("akka.cluster.roles = [" + roleName + "]")
+      .withFallback(ConfigFactory.load.getConfig("workercluster"))
+
     val system = ActorSystem(cfg.getString("system-name"), cfg)
     val sActor = system.actorOf(Props[T], name = schedulerServiceName)
-    Logging(system, sActor).info(
-      s"Started Scheduler Application - waiting for messages schedulerSystem = ${sActor.path} toStr: ${sActor.toString()}"
-    )
+    Logging(system, sActor).info(message = s"Started Scheduler Application - waiting for messages schedulerSystem = ${sActor.path} toStr: ${sActor.toString()}")
     sActor
   }
 }
