@@ -12,24 +12,39 @@ import dlb.wpool.RemoteWorkerApp
 
 
 object CalculatorTaskScheduler extends TaskSchedulerApp {
+  val rnd:java.util.Random = new java.util.Random()
 
   def schedulerServiceName = "CalculatorTaskScheduler"
 
+  def findNextJob:Add = { Add(rnd.nextInt(25), rnd.nextInt(33)) }
+
   def main(args: Array[String]) {
     val thePort:Option[Int] = args.headOption.map {_.toInt}
-    createSchedulerFromParsedArgs[CalculatorTaskScheduler]( thePort )
+    val (schedulerRef, schedulerSystem) = createSchedulerFromParsedArgs[CalculatorTaskScheduler]( thePort )
+
+    Thread.sleep(5000)
+    (0 to 2000).foreach {i =>
+      schedulerRef ! findNextJob
+      Thread.sleep(2000)
+    }
+    schedulerSystem.shutdown()
   }
 }
 
-
 class CalculatorTaskScheduler extends TaskScheduler {
-  val rnd:java.util.Random = new java.util.Random()
 
-  def findNextJob:Task = {
-    if (rnd.nextBoolean())
-      Add(rnd.nextInt(25), rnd.nextInt(33))
-    else Add(java.lang.Math.max(30, rnd.nextInt(90)), -1*rnd.nextInt(30))
+  def schedulerReceive = {
+    case a:Add =>
+      if(backends.nonEmpty) {
+        jobCounter += 1
+        backends(jobCounter % backends.size) ! a
+      } else {
+        log.error("No backends discovered for ")
+      }
+
+    case other =>
   }
+
 }
 
 object RemoteCalculatorPoolApp extends RemoteWorkerApp {
@@ -38,25 +53,43 @@ object RemoteCalculatorPoolApp extends RemoteWorkerApp {
   def schedulerServiceName:String = CalculatorTaskScheduler.schedulerServiceName
 
   def main(args: Array[String]) {
-    createRemoteWorkerPoolFromParsedArgs[AddSubtractActor]( args.headOption.map {_.toInt} )
+    createRemoteWorkerPoolFromParsedArgs[AddActor]( args.headOption.map {_.toInt} )
   }
 }
 
 object MultiplyTaskScheduler extends TaskSchedulerApp {
+  val rnd = new scala.util.Random()
 
   def schedulerServiceName = "MultiplyTaskScheduler"
 
+  def findNextJob:Task = {
+    Mult(rnd.nextInt(19), rnd.nextInt(19))
+  }
+
   def main(args: Array[String]) {
     val thePort:Option[Int] = args.headOption.map {_.toInt}
-    createSchedulerFromParsedArgs[MultiplyTaskScheduler]( thePort )
+    val (schedulerRef, schedulerSystem) = createSchedulerFromParsedArgs[MultiplyTaskScheduler]( thePort )
+
+    Thread.sleep(5000)
+    (0 to 2000).foreach {i =>
+      schedulerRef ! findNextJob
+      Thread.sleep(2000)
+    }
+
+    schedulerSystem.shutdown()
   }
 }
 
 class MultiplyTaskScheduler extends TaskScheduler {
-  val rnd = new scala.util.Random()
 
-  def findNextJob:Task = {
-    Mult(rnd.nextInt(19), rnd.nextInt(19))
+  def schedulerReceive = {
+    case m:Mult =>
+      if(backends.nonEmpty) {
+        jobCounter += 1
+        backends(jobCounter % backends.size) ! m
+      } else {
+        log.error(s"No backends discovered for $m")
+      }
   }
 }
 

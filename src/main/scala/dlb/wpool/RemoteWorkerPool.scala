@@ -74,7 +74,7 @@ trait RemoteWorkerApp {
 
   def schedulerServiceName:String
 
-  def createRemoteWorkerPoolFromParsedArgs[T <: Actor : ClassTag] (port:Option[Int]) {
+  def createRemoteWorkerPoolFromParsedArgs[T <: Actor : ClassTag] (port:Option[Int]):ActorRef = {
     port.foreach {sp => System.setProperty("workercluster.akka.remote.netty.tcp.port", sp.toString)}
 
     val cfg = ConfigFactory.parseString("akka.cluster.roles = ["+workerServiceName.toLowerCase+"]")
@@ -82,8 +82,6 @@ trait RemoteWorkerApp {
 
     val system = ActorSystem(cfg.getString("system-name"), cfg)
 
-    val actor = system.actorOf(Props(new RemoteWorkerPool[T]( schedulerServiceName, 3 )), workerServiceName )
-    Logging(system, actor).info("System.name => " + system.name + ", and scheduler service name => " + schedulerServiceName)
-    Logging(system, actor).info( s"port=${actor.path.address.port.toString} and workerServiceName is $workerServiceName" )
+    system.actorOf(Props(new RemoteWorkerPool[T]( schedulerServiceName, 3 )), workerServiceName )
   }
 }

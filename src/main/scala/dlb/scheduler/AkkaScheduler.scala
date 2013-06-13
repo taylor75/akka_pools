@@ -7,10 +7,8 @@ import reflect.ClassTag
 import dlb.scheduler.tasks.BackendRegistration
 import akka.event.Logging
 import akka.actor.Terminated
-import language.postfixOps
-import scala.concurrent.duration._
 import akka.cluster.ClusterEvent.MemberExited
-import akka.cluster.Cluster
+import akka.cluster.{Member, Cluster}
 
 /*
 * User: catayl2
@@ -23,16 +21,15 @@ trait TaskSchedulerApp  {
 
   def schedulerServiceName:String
 
-  def createSchedulerFromParsedArgs[T <: Actor : ClassTag](schedulerPort:Option[Int], roleName:String = schedulerServiceName.toLowerCase()):ActorRef = {
+  def createSchedulerFromParsedArgs[T <: Actor : ClassTag](schedulerPort:Option[Int]):(ActorRef, ActorSystem) = {
     schedulerPort.foreach {sp => System.setProperty("workercluster.akka.remote.netty.tcp.port", sp.toString)}
 
-    val cfg = ConfigFactory.parseString("akka.cluster.roles = [" + roleName + "]")
+    val cfg = ConfigFactory.parseString("akka.cluster.roles = [" + schedulerServiceName.toLowerCase + "]")
       .withFallback(ConfigFactory.load.getConfig("workercluster"))
 
     val system = ActorSystem(cfg.getString("system-name"), cfg)
-    val sActor = system.actorOf(Props[T], name = schedulerServiceName)
-    Logging(system, sActor).info(message = s"Started Scheduler Application - waiting for messages schedulerSystem = ${sActor.path} toStr: ${sActor.toString()}")
-    sActor
+
+    (system.actorOf(Props[T], name = schedulerServiceName), system)
   }
 }
 
@@ -42,9 +39,8 @@ trait TaskScheduler extends Actor with ActorLogging {
   var stopRequested = false
 
   val cluster = Cluster(context.system)
-  import context.dispatcher
-  val tickTask = context.system.scheduler.schedule(15 seconds, 30 seconds, self, "tick")
 
+  def schedulerReceive : PartialFunction[Any, Unit]
   // subscribe to cluster changes, MemberUp, re-subscribe when restart
   override def preStart(){
     cluster.subscribe(self, classOf[MemberExited])
@@ -54,31 +50,24 @@ trait TaskScheduler extends Actor with ActorLogging {
     cluster.unsubscribe(self)
   }
 
-  def findNextJob:Task
+  def processExitedMember(m:Member) {}
 
-  def receive = {
-
-    case "tick" =>
-      if(backends.nonEmpty) {
-        jobCounter += 1
-        backends(jobCounter % backends.size) ! findNextJob
-      } else {
-        log.error("No backends discovered for ")
-      }
-
+  def clusterReceive:PartialFunction[Any, Unit] = {
     case MemberExited(me) =>
       if (cluster.selfAddress == me.address) {
-        log.warning("RemoteWorkerPool MemberDowned -- No new tasks will be requested and existing tasks will finish.")
+        log.warning("Member Leaving => " + me.toString())
         stopRequested = true
-        tickTask.cancel()
       }
+      processExitedMember(me)
 
     case BackendRegistration if !backends.contains(sender) ⇒
       context watch sender
       backends = backends :+ sender
 
     case Terminated(a) =>
-      log.info("Terminated backend member: " + a.toString())
+      log.info("Terminated member: " + a.toString())
       backends = backends.filterNot(_ == a)
   }
+
+  def receive = clusterReceive orElse schedulerReceive
 }
