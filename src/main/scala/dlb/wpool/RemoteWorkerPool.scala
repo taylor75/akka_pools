@@ -16,7 +16,7 @@ class RemoteWorkerPool[W <: Actor : ClassTag](schedService:String, maxWorkers:In
 
   val cluster = Cluster(context.system)
   var stopRequested = false
-  var taskCounter = 0
+  private[this] var taskCounter = 0
 
   // subscribe to cluster changes, MemberUp, re-subscribe when restart
   override def preStart(){
@@ -63,7 +63,6 @@ class RemoteWorkerPool[W <: Actor : ClassTag](schedService:String, maxWorkers:In
       cluster.system.actorSelection(RootActorPath(member.address) / "user" / schedService) ! BackendRegistration
     }
   }
-
 
   def convertActorNameToRole(name:String) = name.toLowerCase
 }

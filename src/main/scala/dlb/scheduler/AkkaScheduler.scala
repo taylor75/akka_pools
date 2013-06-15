@@ -2,10 +2,8 @@ package dlb.scheduler
 
 import akka.actor._
 import com.typesafe.config._
-import dlb.scheduler.tasks._
 import reflect.ClassTag
 import dlb.scheduler.tasks.BackendRegistration
-import akka.event.Logging
 import akka.actor.Terminated
 import akka.cluster.ClusterEvent.MemberExited
 import akka.cluster.{Member, Cluster}
@@ -35,7 +33,6 @@ trait TaskSchedulerApp  {
 
 trait TaskScheduler extends Actor with ActorLogging {
   var backends = IndexedSeq.empty[ActorRef]
-  var jobCounter = 0
   var stopRequested = false
 
   val cluster = Cluster(context.system)

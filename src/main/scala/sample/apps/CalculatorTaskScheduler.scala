@@ -3,6 +3,7 @@ package sample.apps
 import dlb.scheduler.{TaskScheduler, TaskSchedulerApp}
 import dlb.scheduler.tasks.Task
 import dlb.wpool.RemoteWorkerApp
+import scala.concurrent.forkjoin.ThreadLocalRandom
 
 /*
 * User: ctaylor
@@ -36,12 +37,10 @@ class CalculatorTaskScheduler extends TaskScheduler {
   def schedulerReceive = {
     case a:Add =>
       if(backends.nonEmpty) {
-        jobCounter += 1
-        backends(jobCounter % backends.size) ! a
+        backends(ThreadLocalRandom.current.nextInt(backends.size)) ! a
       } else {
         log.error("No backends discovered for ")
       }
-
     case other =>
   }
 
@@ -85,8 +84,7 @@ class MultiplyTaskScheduler extends TaskScheduler {
   def schedulerReceive = {
     case m:Mult =>
       if(backends.nonEmpty) {
-        jobCounter += 1
-        backends(jobCounter % backends.size) ! m
+        backends(ThreadLocalRandom.current.nextInt(backends.size)) ! m
       } else {
         log.error(s"No backends discovered for $m")
       }
