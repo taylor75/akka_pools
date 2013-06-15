@@ -67,7 +67,7 @@ object MultiplyTaskScheduler extends TaskSchedulerApp {
 
   def main(args: Array[String]) {
     val thePort:Option[Int] = args.headOption.map {_.toInt}
-    val (schedulerRef, schedulerSystem) = createSchedulerFromParsedArgs[MultiplyTaskScheduler]( thePort )
+    val (schedulerRef, schedulerSystem) = createSchedulerFromParsedArgs[MultiplyTaskScheduler]( thePort, Set("multiply") )
 
     Thread.sleep(5000)
     (0 to 2000).foreach {i =>
@@ -98,6 +98,6 @@ object RemoteMultiplyPoolApp extends RemoteWorkerApp {
 
   def main(args: Array[String]) {
     val myPort = args.headOption.map {hd => hd.toInt}
-    createRemoteWorkerPoolFromParsedArgs[MultiplyActor]( myPort )
+    createRemoteWorkerPoolFromParsedArgs[MultiplyActor]( myPort, Set("multiply") )
   }
 }

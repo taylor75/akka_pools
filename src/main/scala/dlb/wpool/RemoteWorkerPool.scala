@@ -11,7 +11,7 @@ import akka.cluster.ClusterEvent._
 import language.postfixOps
 import scala.concurrent.duration._
 
-class RemoteWorkerPool[W <: Actor : ClassTag](schedService:String, maxWorkers:Int) extends Actor with ActorLogging {
+class RemoteWorkerPool[W <: Actor : ClassTag](schedService:String, maxWorkers:Int, roles:Set[String]) extends Actor with ActorLogging {
   val workers = context.actorOf(Props[W].withRouter(SmallestMailboxRouter(maxWorkers)), name = self.path.name+"_workers")
 
   val cluster = Cluster(context.system)
@@ -29,7 +29,6 @@ class RemoteWorkerPool[W <: Actor : ClassTag](schedService:String, maxWorkers:In
   }
 
   def receive = {
-
     case task:Task =>
       taskCounter+=1
       workers ! task
@@ -59,7 +58,7 @@ class RemoteWorkerPool[W <: Actor : ClassTag](schedService:String, maxWorkers:In
   // try to register to all nodes, even though there
   // might not be any frontend on all nodes
   def register(member: Member){
-    if (member.hasRole(convertActorNameToRole(schedService))) {
+    if (member.roles.exists(roles.contains)) {
       cluster.system.actorSelection(RootActorPath(member.address) / "user" / schedService) ! BackendRegistration
     }
   }
@@ -73,14 +72,18 @@ trait RemoteWorkerApp {
 
   def schedulerServiceName:String
 
-  def createRemoteWorkerPoolFromParsedArgs[T <: Actor : ClassTag] (port:Option[Int]):ActorRef = {
+  def createRemoteWorkerPoolFromParsedArgs[T <: Actor : ClassTag] (port:Option[Int], roles:Set[String]):ActorRef = {
     port.foreach {sp => System.setProperty("workercluster.akka.remote.netty.tcp.port", sp.toString)}
 
-    val cfg = ConfigFactory.parseString("akka.cluster.roles = ["+workerServiceName.toLowerCase+"]")
+    val cfg = ConfigFactory.parseString("akka.cluster.roles = [" + roles.mkString(", ") + "]")
       .withFallback(ConfigFactory.load.getConfig("workercluster"))
 
     val system = ActorSystem(cfg.getString("system-name"), cfg)
 
-    system.actorOf(Props(new RemoteWorkerPool[T]( schedulerServiceName, 3 )), workerServiceName )
+    system.actorOf(Props(new RemoteWorkerPool[T]( schedulerServiceName, 3, roles )), workerServiceName )
+  }
+
+  def createRemoteWorkerPoolFromParsedArgs[T <: Actor : ClassTag] (port:Option[Int]):ActorRef = {
+    createRemoteWorkerPoolFromParsedArgs(port, Set(schedulerServiceName.toLowerCase))
   }
 }
