@@ -6,7 +6,7 @@ jarName in assembly := "akkastuffs.jar"
 
 name := "akka_pools"
 
-version := "1.3"
+version := "1.4_SNAPSHOT"
 
 scalaVersion := "2.10.1"
 
