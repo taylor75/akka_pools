@@ -4,6 +4,8 @@ import dlb.scheduler.{TaskScheduler, TaskSchedulerApp}
 import dlb.scheduler.tasks.Task
 import dlb.wpool.RemoteWorkerApp
 import scala.concurrent.forkjoin.ThreadLocalRandom
+import akka.cluster.ClusterEvent.{LeaderChanged, MemberExited}
+import akka.cluster.Member
 
 /*
 * User: ctaylor
@@ -34,12 +36,29 @@ object CalculatorTaskScheduler extends TaskSchedulerApp {
 
 class CalculatorTaskScheduler extends TaskScheduler {
 
+  override def preStart() {
+    super.preStart()
+    cluster.subscribe(self, classOf[LeaderChanged])
+    println("In CalculatorTaskScheduler.preStart()")
+  }
+
+  override def processExitedMember(m:Member){
+    if(cluster.selfAddress == m.address) context.stop(self)
+  }
+
   def schedulerReceive = {
+
+    case ldrChanged:LeaderChanged =>
+      log.warning("LeaderChanged => " + ldrChanged)
+
     case a:Add =>
-      if(backends.nonEmpty) {
-        backends(ThreadLocalRandom.current.nextInt(backends.size)) ! a
-      } else {
-        log.error("No backends discovered for ")
+      if(!stopRequested) {
+        // Initiate stateful hand off and then ...
+        if(backends.nonEmpty) {
+          backends(ThreadLocalRandom.current.nextInt(backends.size)) ! a
+        } else {
+          log.error(s"No backends discovered for $a")
+        }
       }
     case other =>
   }

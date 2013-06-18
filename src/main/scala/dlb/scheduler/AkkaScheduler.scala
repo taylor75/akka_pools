@@ -19,10 +19,10 @@ trait TaskSchedulerApp  {
 
   def schedulerServiceName:String
 
-  def createSchedulerFromParsedArgs[T <: Actor : ClassTag](schedulerPort:Option[Int]):(ActorRef, ActorSystem) =
+  def createSchedulerFromParsedArgs[T <: TaskScheduler : ClassTag](schedulerPort:Option[Int]):(ActorRef, ActorSystem) =
     createSchedulerFromParsedArgs(schedulerPort, Set(schedulerServiceName.toLowerCase))
 
-  def createSchedulerFromParsedArgs[T <: Actor : ClassTag](schedulerPort:Option[Int], roles:Set[String]):(ActorRef, ActorSystem) = {
+  def createSchedulerFromParsedArgs[T <: TaskScheduler : ClassTag](schedulerPort:Option[Int], roles:Set[String]):(ActorRef, ActorSystem) = {
     schedulerPort.foreach {sp => System.setProperty("workercluster.akka.remote.netty.tcp.port", sp.toString)}
 
     val cfg = ConfigFactory.parseString("akka.cluster.roles = [" + roles.mkString(", ") + "]")
