@@ -45,18 +45,24 @@ class ContentMgr extends Actor with ActorLogging {
 
       Future.sequence(workers.map{wkr =>
         (wkr ask someWork).mapTo[WorkResponse]
-      }).flatMap{responses =>
-        (aggregatorRef ask AllResponses(responses)).mapTo[Int]
+      }).map{responses =>
+        Aggregator.calculate(AllResponses(responses))
       } pipeTo sender
   }
 }
 
 class Aggregator extends Actor with ActorLogging {
+
   def receive = {
     case responseList:AllResponses =>
-      val sum = responseList.answers.map{_.i}.sum
+      val sum = Aggregator.calculate(responseList)
       println(s"The sum of all responses from workers is $sum")
       sender ! sum
+  }
+}
+object Aggregator {
+  def calculate(allResp:AllResponses):Int = {
+    allResp.answers.map{_.i}.sum
   }
 }
 
