@@ -2,8 +2,7 @@ package sample.akka
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
-import akka.util.Timeout
-import scala.concurrent.forkjoin.ThreadLocalRandom
+
 
 /*
 * User: catayl2
