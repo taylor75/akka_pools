@@ -21,14 +21,11 @@ case class AllResponses(answers:List[WorkResponse])
 
 object TestApp extends App {
   implicit val timeout = Timeout(15 seconds)
-  import scala.concurrent.ExecutionContext.Implicits.global
-
   val mySystem = ActorSystem("TestSystem")
   val contentMgr = mySystem.actorOf(Props[ContentMgr], "ContentMgr")
-  implicit val myExecCtxt = mySystem.dispatcher.prepare()
   val aggregatorResponse = Await.result(contentMgr ask DoWork, 1 minute)
 
-  println(s"Aggregator's answer to all of life's problems is $aggregatorResponse")
+  println(s"Aggregator answer to all of life's problems is $aggregatorResponse")
 
 }
 
