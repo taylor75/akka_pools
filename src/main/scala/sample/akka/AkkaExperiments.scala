@@ -5,7 +5,6 @@ import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.pattern.{ask, pipe}
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
-import java.util.concurrent.TimeoutException
 import akka.util.Timeout
 
 /*
