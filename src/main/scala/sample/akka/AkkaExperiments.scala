@@ -21,7 +21,7 @@ case class AllResponses(answers:List[WorkResponse])
 object TestApp extends App {
   implicit val timeout = Timeout(15 seconds)
   val mySystem = ActorSystem("TestSystem")
-  val contentMgr = mySystem.actorOf(Props[ContentMgr], "ContentMgr")
+  val contentMgr = mySystem.actorOf(Props(classOf[ContentMgr]), "ContentMgr")
   val aggregatorResponse = Await.result(contentMgr ask DoWork, 1 minute)
 
   println(s"Aggregator answer to all of life's problems is $aggregatorResponse")
@@ -32,9 +32,9 @@ class ContentMgr extends Actor with ActorLogging {
   implicit val timeout = Timeout(55000)
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  val aggregatorRef = context.actorOf(Props[Aggregator], "Aggregator")
-  val doublerRef = context.actorOf(Props[DoublerWorker], "Doubler")
-  val triplerRef = context.actorOf(Props[TriplingWorker], "Tripler")
+  val aggregatorRef = context.actorOf(Props(classOf[Aggregator]), "Aggregator")
+  val doublerRef = context.actorOf(Props(classOf[DoublerWorker]), "Doubler")
+  val triplerRef = context.actorOf(Props(classOf[TriplingWorker]), "Tripler")
   val workers = List(doublerRef,triplerRef)
 
   def receive = {
@@ -59,6 +59,7 @@ class Aggregator extends Actor with ActorLogging {
       sender ! sum
   }
 }
+
 object Aggregator {
   def calculate(allResp:AllResponses):Int = {
     allResp.answers.map{_.i}.sum

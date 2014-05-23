@@ -5,7 +5,10 @@ import dlb.scheduler.tasks.Task
 import dlb.wpool.RemoteWorkerApp
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.cluster.ClusterEvent.{LeaderChanged, MemberExited}
+import scala.concurrent.duration._
 import akka.cluster.Member
+import akka.io.TickGenerator.Tick
+
 
 /*
 * User: ctaylor
@@ -24,21 +27,16 @@ object CalculatorTaskScheduler extends TaskSchedulerApp {
   def main(args: Array[String]) {
     val thePort:Option[Int] = args.headOption.map {_.toInt}
     val (schedulerRef, schedulerSystem) = createSchedulerFromParsedArgs[CalculatorTaskScheduler]( thePort )
-
-    Thread.sleep(5000)
-    (0 to 2000).foreach {i =>
-      schedulerRef ! findNextJob
-      Thread.sleep(2000)
-    }
-    schedulerSystem.shutdown()
   }
 }
 
 class CalculatorTaskScheduler extends TaskScheduler {
+	import scala.concurrent.ExecutionContext.Implicits.global
 
   override def preStart() {
     super.preStart()
     cluster.subscribe(self, classOf[LeaderChanged])
+		context.system.scheduler.schedule(5 seconds, 30 seconds, self, Tick)
     println("In CalculatorTaskScheduler.preStart()")
   }
 
@@ -51,16 +49,14 @@ class CalculatorTaskScheduler extends TaskScheduler {
     case ldrChanged:LeaderChanged =>
       log.warning("LeaderChanged => " + ldrChanged)
 
-    case a:Add =>
-      if(!stopRequested) {
-        // Initiate stateful hand off and then ...
-        if(backends.nonEmpty) {
-          backends(ThreadLocalRandom.current.nextInt(backends.size)) ! a
-        } else {
-          log.error(s"No backends discovered for $a")
-        }
-      }
-    case other =>
+		case Tick =>
+			if(backends.nonEmpty) {
+				(0 to 15).foreach{i =>
+					backends(ThreadLocalRandom.current.nextInt(backends.size)) ! CalculatorTaskScheduler.findNextJob
+				}
+			}
+
+    case other => log.warning(s"unknown msg in CalculatorTaskScheduler - $other")
   }
 
 }

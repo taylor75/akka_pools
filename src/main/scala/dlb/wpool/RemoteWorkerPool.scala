@@ -2,7 +2,6 @@ package dlb.wpool
 
 import akka.actor._
 import akka.routing.SmallestMailboxRouter
-import akka.event.Logging
 import dlb.scheduler.tasks._
 import com.typesafe.config.ConfigFactory
 import reflect.ClassTag
@@ -80,7 +79,7 @@ trait RemoteWorkerApp {
 
     val system = ActorSystem(cfg.getString("system-name"), cfg)
 
-    system.actorOf(Props(new RemoteWorkerPool[T]( schedulerServiceName, 3, roles )), workerServiceName )
+    system.actorOf(Props[RemoteWorkerPool[T]](new RemoteWorkerPool[T]( schedulerServiceName, 3, roles )), workerServiceName )
   }
 
   def createRemoteWorkerPoolFromParsedArgs[T <: Actor : ClassTag] (port:Option[Int]):ActorRef = {

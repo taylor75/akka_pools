@@ -90,8 +90,7 @@ object PublisherTestApp extends App {
   println("SysName=" +cfg.getString("system-name"))
   val system = ActorSystem(cfg.getString("system-name"), cfg)
 
-  val pubActor = system.actorOf(Props(new PubSubPublisherReceiverTest),
-    name = "PublisherActor")
+  val pubActor = system.actorOf(Props(classOf[PubSubPublisherReceiverTest]), name = "PublisherActor")
 }
 
 object SubscriberTestApp extends App {
@@ -102,7 +101,6 @@ object SubscriberTestApp extends App {
 
   val system = ActorSystem(cfg.getString("system-name"), cfg)
 
-  val pubActor = system.actorOf(Props(new PubSubSubscriberReplyTest),
-    name = "SubscriberActor")
+  val pubActor = system.actorOf(Props(classOf[PubSubSubscriberReplyTest]), name = "SubscriberActor")
 }
 
