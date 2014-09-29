@@ -1,13 +1,12 @@
 package sample.apps
 
-import dlb.scheduler.{TaskScheduler, TaskSchedulerApp}
+import dlb.scheduler.{Tick, TaskScheduler, TaskSchedulerApp}
 import dlb.scheduler.tasks.Task
 import dlb.wpool.RemoteWorkerApp
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.cluster.ClusterEvent.{LeaderChanged, MemberExited}
 import scala.concurrent.duration._
 import akka.cluster.Member
-import akka.io.TickGenerator.Tick
 
 
 /*

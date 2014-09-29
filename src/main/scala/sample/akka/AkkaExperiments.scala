@@ -29,7 +29,7 @@ object TestApp extends App {
 }
 
 class ContentMgr extends Actor with ActorLogging {
-  implicit val timeout = Timeout(55000)
+  implicit val timeout = Timeout(55 seconds)
   import scala.concurrent.ExecutionContext.Implicits.global
 
   val aggregatorRef = context.actorOf(Props(classOf[Aggregator]), "Aggregator")

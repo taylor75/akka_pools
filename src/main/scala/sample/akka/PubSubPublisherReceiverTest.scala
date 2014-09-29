@@ -3,10 +3,10 @@ package sample.akka
 import akka.actor.{ActorSystem, Props, Actor, ActorLogging}
 import akka.cluster.Cluster
 import akka.contrib.pattern.DistributedPubSubMediator.{SubscribeAck, Publish, Subscribe}
+import dlb.scheduler.Tick
 import language.postfixOps
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
-import akka.io.TickGenerator.Tick
 import akka.cluster.ClusterEvent.MemberExited
 import akka.pattern.ask
 import scala.concurrent.{Await, Future}
@@ -23,7 +23,7 @@ class PubSubPublisherReceiverTest extends Actor with ActorLogging {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   val tickTask = context.system.scheduler.schedule(30 seconds, 2 minutes, self, Tick)
-  implicit val timeout = Timeout(8000)
+  implicit val timeout = Timeout(8.seconds)
   val cluster = Cluster(context.system)
   lazy val pubSubMediator = DistributedPubSubExtension(cluster.system).mediator
 
@@ -69,7 +69,7 @@ class PubSubSubscriberReplyTest extends Actor with ActorLogging {
   }
 
   def receive = {
-    case SubscribeAck(Subscribe(pubSubTopic, `self`)) => log.info("SubscribeAck for " + pubSubTopic)
+    case SubscribeAck(Subscribe(pubSubTopic, None, `self`)) => log.info("SubscribeAck for " + pubSubTopic)
 
     case msg:MsgFromPublisher =>
       log.info("Received msg from Subscriber, sending back: "+ AckFromSubscriber("I got this from you: " + msg))

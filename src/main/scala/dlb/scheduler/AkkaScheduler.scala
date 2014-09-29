@@ -71,3 +71,5 @@ trait TaskScheduler extends Actor with ActorLogging {
 
   def receive = clusterReceive orElse schedulerReceive
 }
+
+object Tick
