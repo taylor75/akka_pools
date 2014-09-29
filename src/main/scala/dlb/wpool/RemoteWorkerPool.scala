@@ -1,7 +1,7 @@
 package dlb.wpool
 
 import akka.actor._
-import akka.routing.SmallestMailboxRouter
+import akka.routing.{SmallestMailboxPool, SmallestMailboxRouter}
 import akka.event.Logging
 import dlb.scheduler.tasks._
 import com.typesafe.config.ConfigFactory
@@ -12,7 +12,7 @@ import language.postfixOps
 import scala.concurrent.duration._
 
 class RemoteWorkerPool[W <: Actor : ClassTag](schedService:String, maxWorkers:Int, roles:Set[String]) extends Actor with ActorLogging {
-  val workers = context.actorOf(Props[W].withRouter(SmallestMailboxRouter(maxWorkers)), name = self.path.name+"_workers")
+  val workers = context.actorOf(Props[W].withRouter(SmallestMailboxPool(maxWorkers)), name = self.path.name+"_workers")
 
   val cluster = Cluster(context.system)
   var stopRequested = false
