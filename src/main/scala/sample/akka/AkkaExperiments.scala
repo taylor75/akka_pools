@@ -22,7 +22,7 @@ object TestApp extends App {
   implicit val timeout = Timeout(15 seconds)
   val mySystem = ActorSystem("TestSystem")
   val contentMgr = mySystem.actorOf(Props(classOf[ContentMgr]), "ContentMgr")
-  val aggregatorResponse = Await.result(contentMgr ask DoWork, 1 minute)
+  val aggregatorResponse = Await.result(contentMgr ask DoWork, 15 seconds)
 
   println(s"Aggregator answer to all of life's problems is $aggregatorResponse")
 
@@ -69,7 +69,7 @@ object Aggregator {
 class DoublerWorker extends Actor with ActorLogging {
   def receive = {
     case SomeWork(intVal) =>
-      Thread.sleep(ThreadLocalRandom.current().nextInt(5) * 2000)
+      Thread.sleep(ThreadLocalRandom.current().nextInt(5) * 1000)
       val answer = WorkResponse(intVal*2)
       println(s"Doubler is finished $answer")
       sender ! answer
@@ -79,7 +79,7 @@ class DoublerWorker extends Actor with ActorLogging {
 class TriplingWorker extends Actor with ActorLogging {
   def receive = {
     case SomeWork(intVal) =>
-      Thread.sleep(ThreadLocalRandom.current().nextInt(5) * 2000)
+      Thread.sleep(ThreadLocalRandom.current().nextInt(5) * 1000)
       val answer = WorkResponse(intVal*3)
       println(s"TriplingWorker is finished $answer")
       sender ! answer
